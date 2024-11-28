@@ -1,36 +1,34 @@
 use master;
 go
 
+if db_id(N'Lab9') is not null
+	drop database Lab9;
+go
+
+create database Lab9 on
+(
+	name = Lab9data,
+	filename = 'C:\SQL\Lab9data.mdf',
+	size = 10,
+	maxsize = unlimited,
+	filegrowth = 5%
+)
+log on
+(	
+	name = Lab9log,
+	filename = 'C:\SQL\Lab9log.ldf',
+	size = 5MB,
+	maxsize = 25MB,
+	filegrowth = 5MB
+)
+go
+
+use Lab9;
+go
+
 if OBJECT_ID(N'Student') is not null
 	drop table Student;
 go
-
-if OBJECT_ID(N'Department') is not null
-	drop table Department;
-go
-
-if OBJECT_ID(N'Faculty') is not null
-	drop table Faculty;
-go
-
-create table Faculty
-(
-	FacultyID int identity (1, 1) primary key,
-	FacultyName nvarchar(100) unique not null,
-	headoffaculty nvarchar(150),
-	deanery nvarchar(10)
-);
-go
-
-create table Department
-(
-	DepartmentID int identity (1, 1) primary key,
-	DepartmentName nvarchar(100) unique not null check (len(DepartmentName) > 0),
-	code nvarchar(10) unique not null check (len(code) > 0),
-	headofdepartment nvarchar(150) not null,
-	audience nvarchar(10) not null,
-	FacultyID int foreign key references Faculty(FacultyID)
-);
 
 create table Student
 (
@@ -38,19 +36,9 @@ create table Student
 	name nvarchar(50) not null check (len(name) > 0),
 	lastname nvarchar(50) not null check (len(lastname) > 0),
 	middlename nvarchar(50),
-	email nvarchar(256) unique not null check (len(email) > 0),
+	email nvarchar(256) not null check (len(email) > 0),
 	phone nvarchar(15) not null
 )
-go
-
-insert into Faculty (FacultyName, headoffaculty, deanery) values
-('Информатика и системы управления', 'Пролетарский А.В', '318ю'),
-('Инженерный бизнес и менеджмент', 'Омельченко И.Н', '419ю');
-go
-
-insert into Department (DepartmentName, code, headofdepartment, audience, FacultyID) values
-('Теоретическая информатика и компьютерные технологии', 'ИУ9', 'Иванов И.П', '305ю', 1),
-('Инновационное предпринимательство', 'ИБМ7', 'Песоцкий Ю.С', '414ю', 2);
 go
 
 insert into Student (name, lastname, middlename, email, phone) values
@@ -60,7 +48,6 @@ insert into Student (name, lastname, middlename, email, phone) values
 ('Nikita', 'Nikitin', 'Nikitich', 'email4@gmail.com', '79264444444')
 go
 
--- Вставка
 if OBJECT_ID(N'TRIG_INSERT') is not null
 	drop trigger TRIG_INSERT;
 go
@@ -74,11 +61,11 @@ begin
 end;
 go
 
-/*insert into Student (name, lastname, middlename, email, phone, DepartmentID) values
-('Ho', 'Hoho', 'Hohoho', 'email5@gmail.com', '79265555555', 2);
-go*/
-
--- Обновление
+insert into Student (name, lastname, middlename, email, phone) values
+('Hov', 'Hoho', 'Hohoho', 'email5@gmail.com', '79265555555'),
+('Hov2', 'Hoho2', 'Hohoho2', 'email6@gmail.com', '79266666666');
+go
+select * from Student
 
 if OBJECT_ID(N'TRIG_UPDATE') is not null
 	drop trigger TRIG_UPDATE;
@@ -93,9 +80,10 @@ begin
 end;
 go
 
-/*update Student set lastname = 'Ko' where email = 'email4@gmail.com';
-go*/
--- Удаление 
+update Student set lastname = 'Kov' where email like 'email%'
+go
+
+select *from Student
 
 if OBJECT_ID(N'TRIG_DELETE') is not null
 	drop trigger TRIG_UPDATE;
@@ -112,206 +100,232 @@ go
 
 -- Task 2
 
-if object_id(N'DepartmentView') is not null
-	drop view DepartmentView;
+if object_id(N'Employee') is not null
+	drop table Employee;
 go
 
-create view DepartmentView as
-	select D.DepartmentID, D.code, D.DepartmentName, D.headofdepartment, D.audience, F.FacultyName, F.headoffaculty, F.deanery
-	from Faculty as F join Department as D on F.FacultyID = D.FacultyID
+if object_id(N'EmployeeDetails') is not null
+	drop table EmployeeDetails;
 go
 
-
-if OBJECT_ID(N'TRIG_DEPARTMENT_INSERT') is not null
-	drop trigger TRIG_DEPARTMENT_INSERT;
+if object_id(N'EmployeeView') is not null
+	drop view EmployeeView;
 go
 
-if OBJECT_ID(N'TRIG_DEPARTMENT_UPDATE') is not null
-	drop trigger TRIG_DEPARTMENT_UPDATE;
+if object_id(N'TRIG_EmployeeView_Insert') is not null
+	drop trigger TRIG_EmployeeView_Insert;
 go
 
-if OBJECT_ID(N'TRIG_DEPARTMENT_DELETE') is not null
-	drop trigger TRIG_DEPARTMENT_DELETE;
+if object_id(N'TRIG_EmployeeView_Update') is not null
+	drop trigger TRIG_EmployeeView_Update;
 go
 
--- Вставка
-create trigger TRIG_DEPARTMENT_INSERT on DepartmentView instead of insert as
-	begin
-		insert into Department (DepartmentName, code, headofdepartment, audience, FacultyID)
-		select
-			i.DepartmentName,
-			i.code,
-			i.headofdepartment,
-			i.audience,
-			F.FacultyID
-		from inserted i
-		join Faculty F on i.FacultyName = F.FacultyName;
-	end;
+if object_id(N'TRIG_EmployeeView_Delete') is not null
+	drop trigger TRIG_EmployeeView_Delete;
 go
 
-select * from DepartmentView;
+if object_id(N'TRIG_EmployeeView_Update2') is not null
+	drop trigger TRIG_EmployeeView_Update2;
 go
 
-insert into DepartmentView (code, DepartmentName, headofdepartment, audience, FacultyName) values
-('ИУ7', 'Программная инженерия', 'Рудаков И.В', '200ю', 'Информатика и системы управления');
+create table Employee
+(
+	EmployeeID int identity(1, 1) primary key not null,
+	name nvarchar(50) not null check(len(name) > 0),
+	lastname nvarchar(50) not null check(len(lastname) > 0),
+	salary int not null 
+);
 go
 
-select * from DepartmentView;
+create table EmployeeDetails
+(
+	EmployeeID int primary key,
+	years_of_work int not null,
+	hours_per_day int not null,
+	foreign key (EmployeeID) references Employee(EmployeeID) on delete cascade
+);
 go
 
-
--- Обновление
-/*create trigger TRIG_DEPARTMENT_UPDATE on DepartmentView instead of update as
-	begin
-		if update(FacultyName) or update(headoffaculty) or update(deanery)
-			throw 50001, 'Невозможно изменить данные', 1;
-		if update(Departmentname)
-			if exists (select * from inserted join Faculty as F on F.FacultyName = inserted.FacultyName)
-				update Department set
-					Department.code = inserted.code,
-					Department.DepartmentName = inserted.DepartmentName,
-					Department.headofdepartment = inserted.headofdepartment,
-					Department.audience = inserted.audience
-				from Department join inserted on Department.DepartmentID = inserted.DepartmentID;
-			else throw 50002, 'Невозможно изменить данные, поскольку не существует кафедры с таким названием', 1;
-		else
-			begin
-				update Department set
-					Department.code = inserted.code,
-					Department.DepartmentName = inserted.DepartmentName,
-					Department.headofdepartment = inserted.headofdepartment,
-					Department.audience = inserted.audience
-				from Department join inserted on Department.DepartmentID = inserted.DepartmentID
-			end;
-	end;
+insert into Employee(name, lastname, salary) values
+('Bob', 'Marley', 20000),
+('Forrest', 'Gump', 30000);
+go
+insert into EmployeeDetails(years_of_work, hours_per_day, EmployeeID) values
+(10, 8, 1),
+(20, 8, 2);
 go
 
-select * from DepartmentView;
+create view EmployeeView as
+select
+    E.EmployeeID,
+    E.name,
+    E.lastname,
+    E.salary,
+    D.years_of_work,
+    D.hours_per_day
+from
+    Employee E
+inner join
+    EmployeeDetails D on E.EmployeeID = D.EmployeeID;
 go
 
-/* Обработка ошибочного случая
-update DepartmentView set FacultyName = 'TEST' where DepartmentID = 2;
-go*/
-
-/* Обработка ошибочного случая
-update DepartmentView set DepartmentName = 'TEST' where DepartmentName = 'Инновационное предпринимательств';
-go*/
-/*
-update DepartmentView set code = 'TEST' where DepartmentName = 'Инновационное предпринимательство';
-go
-
-select * from DepartmentView;
-go*/
-*/
-create trigger TRIG_DEPARTMENT_DELETE on DepartmentView instead of delete as
-	begin
-		delete from Department where DepartmentID in (select DepartmentID from deleted);
-	end;
-go
-
-/*select * from DepartmentView;
-delete from DepartmentView where DepartmentName = 'Инновационное предпринимательство';
-select * from DepartmentView;*/
-
-
-/*-- merge (пример для update)
-merge into DepartmentView as target
-using (
-	select 'ИУ8' as code, 'Программная инженерия' as DepartmentName, 'Басараб М.А' as headofdepartment, '100ю' as audience, 'Информатика и системы управления' as FacultyName
-) as source
-on target.DepartmentName = source.DepartmentName
-when matched then
-	update set
-		target.code = source.code,
-		target.headofdepartment = source.headofdepartment,
-		target.audience = source.audience
-when not matched then
-	insert (code, DepartmentName, headofdepartment, audience, FacultyName)
-	values (source.code, source.DepartmentName, source.headofdepartment, source.audience, source.FacultyName);
-go
-
-select * from DepartmentView;*/
-
--- merge (пример для insert)
-/*merge into DepartmentView as target
-using (
-	select 'ИУ8' as code, 'Информационная безопасность' as DepartmentName, 'Басараб М.А' as headofdepartment, '100ю' as audience, 'Информатика и системы управления' as FacultyName
-) as source
-on target.DepartmentName = source.DepartmentName
-when matched then
-	update set
-		target.code = source.code,
-		target.headofdepartment = source.headofdepartment,
-		target.audience = source.audience
-when not matched then
-	insert (code, DepartmentName, headofdepartment, audience, FacultyName)
-	values (source.code, source.DepartmentName, source.headofdepartment, source.audience, source.FacultyName);
-go
-
-select * from DepartmentView;*/
-
-
--- CTE
-if OBJECT_ID(N'TRIG_DEPARTMENT_UPDATE_CTE') is not null
-	drop trigger TRIG_DEPARTMENT_UPDATE_CTE;
-go
-
-create trigger TRIG_DEPARTMENT_UPDATE_CTE on DepartmentView instead of update as
+create trigger TRIG_EmployeeView_Insert on EmployeeView instead of insert as
 begin
-	-- Проверка, что обновляются только разрешенные столбцы
-	if update(FacultyName) or update(headoffaculty) or update(deanery)
+	if exists (select * from inserted where len(name) < 3)
 	begin
-		throw 50001, 'Невозможно изменить данные', 1;
+		raiserror('Имя должно быть длиннее 2 символов', 16, 1);
+		return;
 	end;
+    insert into Employee (name, lastname, salary)
+    select name, lastname, salary
+    from inserted;
 
-	-- Использование CTE для обновления данных в таблице Department
-	with UpdatedDepartments as (
-		select
-			i.DepartmentID,
-			i.code,
-			i.DepartmentName,
-			i.headofdepartment,
-			i.audience,
-			i.FacultyName
-		from inserted i
-	)
-	update Department
-	set
-		Department.code = u.code,
-		Department.DepartmentName = u.DepartmentName,
-		Department.headofdepartment = u.headofdepartment,
-		Department.audience = u.audience
-	from UpdatedDepartments u
-	join Department d on u.DepartmentID = d.DepartmentID
-	where
-		(update(DepartmentName) and exists (select 1 from Faculty f where f.FacultyName = u.FacultyName))
-		or not update(DepartmentName);
-
-	-- Проверка наличия факультета при обновлении DepartmentName
-	if update(DepartmentName)
-	begin
-		if not exists (select 1 from Faculty f where f.FacultyName = (select FacultyName from inserted))
-		begin
-			throw 50002, 'Невозможно изменить данные, поскольку не существует кафедры с таким названием', 1;
-		end
-	end;
+    insert into EmployeeDetails (EmployeeID, years_of_work, hours_per_day)
+    select E.EmployeeID, years_of_work, hours_per_day
+    from inserted i
+    join Employee E on i.name = E.name and i.lastname = E.lastname;
 end;
 go
 
+create trigger TRIG_EmployeeView_Update on EmployeeView instead of update as
+begin
+    if update(EmployeeID)
+    begin
+        throw 50001, 'Невозможно изменить EmployeeID', 1;
+    end;
+	if exists (select * from inserted where len(lastname) < 3)
+	begin
+		throw 50001, 'Фамилия должна быть длиннее 2 символов', 1;
+		return;
+	end;
 
-select * from DepartmentView;
+    update Employee
+    set name = i.name,
+        lastname = i.lastname,
+        salary = i.salary
+    from inserted i
+    where Employee.EmployeeID = i.EmployeeID;
+
+    update EmployeeDetails
+    set years_of_work = i.years_of_work,
+        hours_per_day = i.hours_per_day
+    from inserted i
+    where EmployeeDetails.EmployeeID = i.EmployeeID;
+end;
 go
 
--- Обработка ошибочного случая
-update DepartmentView set FacultyName = 'TEST' where DepartmentID = 2;
+create trigger TRIG_EmployeeView_Delete on EmployeeView instead of delete as
+begin
+    delete from EmployeeDetails
+    where EmployeeID in (select EmployeeID from deleted);
+
+    delete from Employee
+    where EmployeeID in (select EmployeeID from deleted);
+end;
 go
 
--- Обработка ошибочного случая
-/*update DepartmentView set DepartmentName = 'TEST' where DepartmentName = 'Инновационное предпринимательств';
-go*/
+insert into EmployeeView (name, lastname, salary, years_of_work, hours_per_day)
+values
+    ('P', 'Diddy', 50000, 5, 8);
+go
 
-/*update DepartmentView set code = 'TEST' where DepartmentName = 'Инновационное предпринимательство';
-go*/
+insert into EmployeeView (name, lastname, salary, years_of_work, hours_per_day)
+values
+	('Justin', 'Biber', 100000, 3, 8),
+    ('Travis', 'Scott', 60000, 7, 8),
+	('Mike', 'Tyson', 90000, 8, 10);
+go
 
-select * from DepartmentView;
+select * from EmployeeView;
+go
+select * from Employee;
+go
+select * from EmployeeDetails;
+go
+update EmployeeView
+set salary = 55000, years_of_work = 6
+where name = 'Bob' and lastname = 'Marley';
+go
+
+delete from EmployeeView
+where name = 'Travis' and lastname = 'Scott';
+go
+
+select *from EmployeeView;
+go
+
+select * from Employee;
+
+
+-- merge
+merge into EmployeeView as target
+using (
+    select 'Mike', 'Tyson', 70000, 4, 8
+    union all
+    select 'Bob', 'Marley', 25000, 11, 8
+) as source (name, lastname, salary, years_of_work, hours_per_day)
+on target.name = source.name and target.lastname = source.lastname
+when matched then
+    update set
+        target.salary = source.salary,
+        target.years_of_work = source.years_of_work,
+        target.hours_per_day = source.hours_per_day
+when not matched then
+    insert (name, lastname, salary, years_of_work, hours_per_day)
+    values (source.name, source.lastname, source.salary, source.years_of_work, source.hours_per_day);
+go
+
+select * from EmployeeView;
+go
+select * from Employee;
+go
+select * from EmployeeDetails;
+go
+
+
+if object_id(N'TRIG_EmployeeView_Update') is not null
+	drop trigger TRIG_EmployeeView_Update;
+go
+-- CTE
+create trigger TRIG_EmployeeView_Update2 on EmployeeView instead of update as
+begin
+    if update(EmployeeID)
+    begin
+        throw 50001, 'Невозможно изменить EmployeeID', 1;
+    end;
+
+    with UpdatedEmployees (EmployeeID, name, lastname, salary, years_of_work, hours_per_day) as (
+        select i.EmployeeID, i.name, i.lastname, i.salary, i.years_of_work, i.hours_per_day
+        from inserted i
+    )
+    update Employee
+    set name = u.name,
+        lastname = u.lastname,
+        salary = u.salary
+    from UpdatedEmployees u
+    where Employee.EmployeeID = u.EmployeeID;
+
+	with UpdatedEmployees (EmployeeID, name, lastname, salary, years_of_work, hours_per_day) as (
+        select i.EmployeeID, i.name, i.lastname, i.salary, i.years_of_work, i.hours_per_day
+        from inserted i
+    )
+
+    update EmployeeDetails
+    set years_of_work = u.years_of_work,
+        hours_per_day = u.hours_per_day
+    from UpdatedEmployees u
+    where EmployeeDetails.EmployeeID = u.EmployeeID;
+end;
+go
+
+update EmployeeView
+set salary = 55000, years_of_work = 9
+where name = 'Bob' and lastname = 'Marley';
+go
+
+select * from EmployeeView;
+go
+select * from Employee;
+go
+select * from EmployeeDetails;
 go
